@@ -1,0 +1,408 @@
+#!/usr/bin/env bash
+# Check whether an assessment satisfies the repo quality gates.
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(dirname "$SCRIPT_DIR")"
+source "$SCRIPT_DIR/common.sh"
+
+if [ -z "${1:-}" ]; then
+  echo "Usage: scripts/check-assessment <idea-name>"
+  echo "  e.g.: scripts/check-assessment ai-hvac-scheduler"
+  exit 1
+fi
+
+IDEA_INPUT="$*"
+IDEA_KEY="$(resolve_idea_key "$IDEA_INPUT")"
+ASSESSMENT_DIR="$ROOT/docs/assessments/$IDEA_KEY"
+RESEARCH_DIR="$ROOT/docs/research/$IDEA_KEY"
+STATUS=0
+
+ASSESSMENT_FILES=(
+  idea-brief.md
+  viability-score.md
+  red-green-flags.md
+  recommendations.md
+  risk-assessment.md
+  full-report.md
+  executive-summary.md
+  one-pager.md
+)
+
+RESEARCH_FILES=(
+  market-overview.md
+  trends.md
+  segments.md
+  sources.md
+  competitors.md
+  positioning-map.md
+  moat-comparison.md
+  revenue-model.md
+  unit-economics.md
+  financial-scenarios.md
+)
+
+PLACEHOLDER_PATTERN='\[Fill in\]|\[Unknown|\[Reason|\[Step|\[Signal|\[Risk|\[Condition|\[Idea|\[Short description\]|X/100|YYYY-MM-DD|Build now / Validate first / Park / No-go|Low / Medium / High / Very High|Pass / Concern / Blocker|Commodity Trap / Moderate Defensibility / Strong Defensibility / Exceptional Moat|\| X \||\[Choose one idea and explain why it should be the current priority\.\]|^- Product name:[[:space:]]*$|^- One-sentence thesis:[[:space:]]*$|^- Primary user:[[:space:]]*$|^- Economic buyer:[[:space:]]*$|^- Urgent problem:[[:space:]]*$|^- Current alternatives:[[:space:]]*$|^- Why this problem matters now:[[:space:]]*$|^- Why this customer should pay:[[:space:]]*$|^- Why this team can win now:[[:space:]]*$|^- Why this can become hard to copy:[[:space:]]*$|^- Why the capital path fits this idea:[[:space:]]*$|^- Why this is a good business if execution is strong:[[:space:]]*$|^- First wedge to build:[[:space:]]*$|^- Specific workflow being improved:[[:space:]]*$|^- Clear v1 outcome:[[:space:]]*$|^- What is explicitly out of scope:[[:space:]]*$|^- Initial distribution path:[[:space:]]*$|^- Expected sales motion:[[:space:]]*$|^- Pricing hypothesis:[[:space:]]*$|^- Fastest proof of demand:[[:space:]]*$|^- Trust, compliance, or regulatory constraints:[[:space:]]*$|^- Platform, channel, or customer dependency constraints:[[:space:]]*$|^- Operational constraints:[[:space:]]*$|^- Important risks:[[:space:]]*$|^- Assumption 1:[[:space:]]*$|^- Assumption 2:[[:space:]]*$|^- Assumption 3:[[:space:]]*$|^- Signal that would invalidate the idea:[[:space:]]*$|^- Signal that would force a narrower wedge:[[:space:]]*$|^- Signal that would support moving faster:[[:space:]]*$|^- First spec to create:[[:space:]]*$|^- Second spec candidate:[[:space:]]*$|^- Business questions that must stay visible during implementation:[[:space:]]*$'
+
+pass() {
+  echo "PASS: $1"
+}
+
+fail() {
+  echo "FAIL: $1"
+  STATUS=1
+}
+
+check_file() {
+  local path="$1"
+  local label="$2"
+  if [ -f "$path" ]; then
+    pass "$label exists"
+  else
+    fail "$label missing"
+  fi
+}
+
+check_no_placeholders() {
+  local path="$1"
+  local label="$2"
+  local matches
+
+  if [ ! -f "$path" ]; then
+    return
+  fi
+
+  matches="$(grep -En "$PLACEHOLDER_PATTERN" "$path" || true)"
+  if [ -n "$matches" ]; then
+    fail "$label still contains template placeholders"
+    echo "$matches"
+  else
+    pass "$label has no template placeholders"
+  fi
+}
+
+contains_regex() {
+  local pattern="$1"
+  local path="$2"
+
+  [ -f "$path" ] && grep -Eq "$pattern" "$path"
+}
+
+count_markdown_rows() {
+  local path="$1"
+  if [ ! -f "$path" ]; then
+    echo 0
+    return
+  fi
+
+  awk -F'|' 'NF >= 6 && $0 !~ /---/ && $0 !~ /Idea \|/ && $0 !~ /Metric \|/ && $0 !~ /Claim Area \|/ && $0 !~ /Competitor \|/ { count++ } END { print count + 0 }' "$path"
+}
+
+echo "=== Worth Building: Assessment Quality Gate Check ==="
+echo ""
+
+if [ ! -d "$ASSESSMENT_DIR" ]; then
+  fail "Assessment directory not found: $ASSESSMENT_DIR"
+  exit 1
+fi
+
+if [ ! -d "$RESEARCH_DIR" ]; then
+  fail "Research directory not found: $RESEARCH_DIR"
+  exit 1
+fi
+
+for name in "${ASSESSMENT_FILES[@]}"; do
+  check_file "$ASSESSMENT_DIR/$name" "assessment/$name"
+  check_no_placeholders "$ASSESSMENT_DIR/$name" "assessment/$name"
+done
+
+for name in "${RESEARCH_FILES[@]}"; do
+  check_file "$RESEARCH_DIR/$name" "research/$name"
+  check_no_placeholders "$RESEARCH_DIR/$name" "research/$name"
+done
+
+for dimension in \
+  "Proprietary Data & Context Moats" \
+  "Workflow Embedding & Switching Costs" \
+  "Trust, Compliance & Governance" \
+  "Vertical Integration & Niche Depth" \
+  "Network Effects & Community" \
+  "Speed of Iteration & Learning Velocity" \
+  "Hardware Integration & Physical Bundling"; do
+  if contains_regex "$dimension" "$ASSESSMENT_DIR/viability-score.md"; then
+    pass "viability score includes $dimension"
+  else
+    fail "viability score missing $dimension"
+  fi
+done
+
+if contains_regex '\*\*Qualification Score\*\*: [0-9]+/100' "$ASSESSMENT_DIR/viability-score.md"; then
+  pass "qualification score is present"
+else
+  fail "qualification score is missing or malformed"
+fi
+
+if contains_regex '\*\*Defensibility Score\*\*: [0-9]+/100' "$ASSESSMENT_DIR/viability-score.md"; then
+  pass "defensibility score is present"
+else
+  fail "defensibility score is missing or malformed"
+fi
+
+if contains_regex '\*\*Final Verdict\*\*: (Build now|Validate first|Park|No-go)' "$ASSESSMENT_DIR/viability-score.md"; then
+  pass "viability score includes a valid final verdict"
+else
+  fail "viability score is missing a valid final verdict"
+fi
+
+if contains_regex '\*\*Decision Rule Applied\*\*:' "$ASSESSMENT_DIR/viability-score.md"; then
+  pass "viability score includes decision rule"
+else
+  fail "viability score is missing decision rule"
+fi
+
+if contains_regex '## Qualification Scorecard' "$ASSESSMENT_DIR/viability-score.md"; then
+  pass "qualification scorecard is present"
+else
+  fail "qualification scorecard is missing"
+fi
+
+if contains_regex '## Decision Gates' "$ASSESSMENT_DIR/viability-score.md"; then
+  pass "decision gates are present"
+else
+  fail "decision gates are missing"
+fi
+
+for gate in \
+  'Founder / Team Right To Win' \
+  'Capital Path And Funding Fit' \
+  'Validation Cost And Reversibility' \
+  'Platform / Channel / Customer Dependency' \
+  'Regulatory / Legal / Operational Readiness'; do
+  if contains_regex "$gate" "$ASSESSMENT_DIR/viability-score.md"; then
+    pass "viability score includes gate: $gate"
+  else
+    fail "viability score missing gate: $gate"
+  fi
+done
+
+for dimension in \
+  'Problem Severity And Urgency' \
+  'Buyer Clarity, Budget, And Switching Willingness' \
+  'Distribution Realism' \
+  'Competitive Advantage And Moat Path' \
+  'Workflow Embedding And Retention Potential' \
+  'Revenue Quality And Capital Efficiency' \
+  'Founder / Team Right To Win' \
+  'Timing And Market Pull' \
+  'Validation Speed And Cost' \
+  'Dependency, Regulatory, And Operational Complexity'; do
+  if contains_regex "$dimension" "$ASSESSMENT_DIR/viability-score.md"; then
+    pass "qualification score includes $dimension"
+  else
+    fail "qualification score missing $dimension"
+  fi
+done
+
+for section in \
+  '## Problem' \
+  '## Target Customer' \
+  '## Current Alternatives' \
+  '## Buyer' \
+  '## Why Now' \
+  '## Distribution Hypothesis' \
+  '## Willingness To Pay Hypothesis' \
+  '## Switching Hypothesis' \
+  '## Founder / Team Right To Win' \
+  '## Capital And Validation Constraints' \
+  '## Dependency And Regulatory Constraints' \
+  '## Defensibility Hypothesis'; do
+  if contains_regex "$section" "$ASSESSMENT_DIR/idea-brief.md"; then
+    pass "idea brief includes ${section#\#\# }"
+  else
+    fail "idea brief missing ${section#\#\# }"
+  fi
+done
+
+if contains_regex '## Market Definition' "$RESEARCH_DIR/market-overview.md" \
+  && contains_regex '## TAM' "$RESEARCH_DIR/market-overview.md" \
+  && contains_regex '## SAM' "$RESEARCH_DIR/market-overview.md" \
+  && contains_regex '## SOM' "$RESEARCH_DIR/market-overview.md" \
+  && contains_regex '## Market Timing' "$RESEARCH_DIR/market-overview.md"; then
+  pass "market overview includes definition, TAM, SAM, SOM, and timing"
+else
+  fail "market overview is missing definition, TAM, SAM, SOM, or timing"
+fi
+
+SOURCE_ROWS="$(count_markdown_rows "$RESEARCH_DIR/sources.md")"
+if [ "$SOURCE_ROWS" -ge 5 ]; then
+  pass "sources file has at least 5 entries"
+else
+  fail "sources file has fewer than 5 entries"
+fi
+
+COMPETITOR_ROWS="$(count_markdown_rows "$RESEARCH_DIR/competitors.md")"
+if [ "$COMPETITOR_ROWS" -ge 5 ]; then
+  pass "competitor analysis includes at least 5 competitors"
+else
+  fail "competitor analysis includes fewer than 5 competitors"
+fi
+
+if contains_regex '\| LTV:CAC \|' "$RESEARCH_DIR/unit-economics.md" \
+  && contains_regex '\| Payback period \|' "$RESEARCH_DIR/unit-economics.md" \
+  && contains_regex '\| Capital needed to first proof \|' "$RESEARCH_DIR/unit-economics.md" \
+  && contains_regex '\| Months to first meaningful proof \|' "$RESEARCH_DIR/unit-economics.md"; then
+  pass "unit economics includes core economics and proof-cost metrics"
+else
+  fail "unit economics is missing LTV:CAC, payback period, or proof-cost metrics"
+fi
+
+if contains_regex '## Capital Requirements And Funding Fit' "$RESEARCH_DIR/revenue-model.md" \
+  && contains_regex '## Validation Budget' "$RESEARCH_DIR/revenue-model.md"; then
+  pass "revenue model includes capital fit and validation budget"
+else
+  fail "revenue model is missing capital fit or validation budget"
+fi
+
+if contains_regex '## Runway And Funding View' "$RESEARCH_DIR/financial-scenarios.md"; then
+  pass "financial scenarios include runway and funding view"
+else
+  fail "financial scenarios are missing runway and funding view"
+fi
+
+if contains_regex '\*\*Recommendation\*\*: (Build now|Validate first|Park|No-go)' "$ASSESSMENT_DIR/recommendations.md"; then
+  pass "recommendation includes a valid decision"
+else
+  fail "recommendation is missing a valid decision"
+fi
+
+DECISION="$(sed -n 's/^- \*\*Recommendation\*\*: //p; s/^\*\*Recommendation\*\*: //p' "$ASSESSMENT_DIR/recommendations.md" | head -n 1)"
+
+if contains_regex '\*\*Confidence\*\*: (Low|Medium|High)' "$ASSESSMENT_DIR/recommendations.md"; then
+  pass "recommendation includes confidence"
+else
+  fail "recommendation is missing confidence"
+fi
+
+if contains_regex '\*\*Decision Rule Applied\*\*:' "$ASSESSMENT_DIR/recommendations.md"; then
+  pass "recommendation includes decision rule"
+else
+  fail "recommendation is missing decision rule"
+fi
+
+for section in \
+  '## What Must Be True To Earn Build Now' \
+  '## Cheapest Next Proof' \
+  '## Critical Assumptions To Validate' \
+  '## 30-Day Plan'; do
+  if contains_regex "$section" "$ASSESSMENT_DIR/recommendations.md"; then
+    pass "recommendations include ${section#\#\# }"
+  else
+    fail "recommendations missing ${section#\#\# }"
+  fi
+done
+
+for section in \
+  '## Overall Risk Profile' \
+  '## Gate Risks' \
+  '## Go / No-Go Risk View'; do
+  if contains_regex "$section" "$ASSESSMENT_DIR/risk-assessment.md"; then
+    pass "risk assessment includes ${section#\#\# }"
+  else
+    fail "risk assessment missing ${section#\#\# }"
+  fi
+done
+
+for section in \
+  '## Decision Rule' \
+  '## What Must Be True' \
+  '## Immediate Next Step'; do
+  if contains_regex "$section" "$ASSESSMENT_DIR/executive-summary.md"; then
+    pass "executive summary includes ${section#\#\# }"
+  else
+    fail "executive summary missing ${section#\#\# }"
+  fi
+done
+
+for section in \
+  '## Decision Logic' \
+  '## Right To Win' \
+  '## Market Analysis' \
+  '## Competitive Landscape' \
+  '## Revenue Model' \
+  '## Capital And Validation Plan' \
+  '## Strategic Recommendation'; do
+  if contains_regex "$section" "$ASSESSMENT_DIR/full-report.md"; then
+    pass "full report includes ${section#\#\# }"
+  else
+    fail "full report missing ${section#\#\# }"
+  fi
+done
+
+VIABILITY_DECISION="$(sed -n 's/^- \*\*Final Verdict\*\*: //p; s/^\*\*Final Verdict\*\*: //p' "$ASSESSMENT_DIR/viability-score.md" | head -n 1)"
+if [ -n "$VIABILITY_DECISION" ] && [ "$VIABILITY_DECISION" = "$DECISION" ]; then
+  pass "viability score and recommendation decisions match"
+else
+  fail "viability score and recommendation decisions do not match"
+fi
+
+if [ "$DECISION" = "Build now" ]; then
+  QUALIFICATION_SCORE="$(sed -n 's/^- \*\*Qualification Score\*\*: \([0-9][0-9]*\)\/100$/\1/p; s/^\*\*Qualification Score\*\*: \([0-9][0-9]*\)\/100$/\1/p' "$ASSESSMENT_DIR/viability-score.md" | head -n 1)"
+  DEFENSIBILITY_SCORE="$(sed -n 's/^- \*\*Defensibility Score\*\*: \([0-9][0-9]*\)\/100$/\1/p; s/^\*\*Defensibility Score\*\*: \([0-9][0-9]*\)\/100$/\1/p' "$ASSESSMENT_DIR/viability-score.md" | head -n 1)"
+
+  if [ -n "$QUALIFICATION_SCORE" ] && [ "$QUALIFICATION_SCORE" -ge 70 ]; then
+    pass "build-now qualification score meets threshold"
+  else
+    fail "build-now qualification score is below threshold or missing"
+  fi
+
+  if [ -n "$DEFENSIBILITY_SCORE" ] && [ "$DEFENSIBILITY_SCORE" -ge 60 ]; then
+    pass "build-now defensibility score meets threshold"
+  else
+    fail "build-now defensibility score is below threshold or missing"
+  fi
+
+  if contains_regex '\| [^|]+ \| Blocker \|' "$ASSESSMENT_DIR/viability-score.md"; then
+    fail "build-now assessment still contains blocker gates in viability score"
+  else
+    pass "build-now assessment has no blocker gates in viability score"
+  fi
+
+  if contains_regex '\| [^|]+ \| Blocker \|' "$ASSESSMENT_DIR/risk-assessment.md"; then
+    fail "build-now assessment still contains blocker gates in risk assessment"
+  else
+    pass "build-now assessment has no blocker gates in risk assessment"
+  fi
+
+  check_file "$ASSESSMENT_DIR/meta-template-handoff.md" "assessment/meta-template-handoff.md"
+  check_no_placeholders "$ASSESSMENT_DIR/meta-template-handoff.md" "assessment/meta-template-handoff.md"
+
+  for section in \
+    '## Customer And Buyer' \
+    '## Why This Is Worth Building' \
+    '## First Product Wedge' \
+    '## Route To Market' \
+    '## Constraints' \
+    '## Critical Assumptions' \
+    '## Kill Criteria' \
+    '## Mapping To Specs'; do
+    if contains_regex "$section" "$ASSESSMENT_DIR/meta-template-handoff.md"; then
+      pass "handoff includes ${section#\#\# }"
+    else
+      fail "handoff missing ${section#\#\# }"
+    fi
+  done
+fi
+
+if [ -f "$ASSESSMENT_DIR/full-report.md" ]; then
+  pass "full report saved in docs/assessments"
+else
+  fail "full report missing"
+fi
+
+echo ""
+if [ "$STATUS" -eq 0 ]; then
+  echo "Assessment passed all quality gates."
+else
+  echo "Assessment failed one or more quality gates."
+fi
+
+exit "$STATUS"

@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Backend bootstrap helper for the conversational qualification workflow.
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(dirname "$SCRIPT_DIR")"
+source "$SCRIPT_DIR/common.sh"
+
+echo "=== Worth Building: Idea Qualification ==="
+echo ""
+echo "This script bootstraps files for a business idea qualification pass."
+echo "It follows the workflow defined in:"
+echo "  core/prompts/workflows/qualify-idea.md"
+echo "  core/prompts/workflows/worth-building.md"
+echo "  core/prompts/workflows/assess-idea.md"
+echo ""
+echo "Steps:"
+echo "  1. Gather context (idea brief)"
+echo "  2. Qualification scoring"
+echo "  3. Decision-critical market research"
+echo "  4. Competitive analysis"
+echo "  5. Revenue quality analysis"
+echo "  6. Risk assessment"
+echo "  7. Decision memo generation"
+echo ""
+
+if [ -z "${1:-}" ]; then
+  echo "Usage: scripts/assess <idea-name>"
+  echo "  e.g.: scripts/assess ai-hvac-scheduler"
+  exit 1
+fi
+
+IDEA_INPUT="$*"
+IDEA_KEY="$(resolve_idea_key "$IDEA_INPUT")"
+ASSESSMENT_DIR="$ROOT/docs/assessments/$IDEA_KEY"
+RESEARCH_DIR="$ROOT/docs/research/$IDEA_KEY"
+ASSESSMENT_TEMPLATE_DIR="$ROOT/core/templates/assessments"
+RESEARCH_TEMPLATE_DIR="$ROOT/core/templates/research"
+
+mkdir -p "$ASSESSMENT_DIR" "$RESEARCH_DIR"
+echo "Idea name: $IDEA_INPUT"
+echo "Idea key:  $IDEA_KEY"
+echo "Assessment directory ready: $ASSESSMENT_DIR"
+echo "Research directory ready:   $RESEARCH_DIR"
+echo ""
+echo "Bootstrapping assessment templates..."
+
+for name in idea-brief viability-score red-green-flags recommendations risk-assessment full-report executive-summary one-pager; do
+  bootstrap_file "$ASSESSMENT_TEMPLATE_DIR/$name.md" "$ASSESSMENT_DIR/$name.md"
+done
+
+for name in market-overview trends segments sources competitors positioning-map moat-comparison revenue-model unit-economics financial-scenarios; do
+  bootstrap_file "$RESEARCH_TEMPLATE_DIR/$name.md" "$RESEARCH_DIR/$name.md"
+done
+
+echo ""
+echo "Ready for assessment. Start with:"
+echo "  docs/assessments/$IDEA_KEY/idea-brief.md"
+echo ""
+echo "Workflow prompts:"
+echo "  core/prompts/workflows/qualify-idea.md"
+echo "  core/prompts/workflows/worth-building.md"
+echo "  core/prompts/workflows/assess-idea.md"
+echo ""
+echo "Assessment files: $ASSESSMENT_DIR/"
+echo "Research files:   $RESEARCH_DIR/"
+echo ""
+echo "If this becomes a Build-now idea, prepare and export:"
+echo "  $ASSESSMENT_DIR/meta-template-handoff.md"
+echo "  scripts/export-handoff $IDEA_KEY"

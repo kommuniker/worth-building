@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  public-readiness:
+    name: Public readiness checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate manifest
+        run: scripts/validate-manifest
+
+      - name: Check worked example
+        run: scripts/check-assessment example-ai-physio-scribe
+
+      - name: Verify export bundle
+        run: |
+          scripts/export-bundle example-ai-physio-scribe /tmp/worth-building-export
+          test -f /tmp/worth-building-export/README.md
+          test -f /tmp/worth-building-export/AI-PICKUP.md
+          test -f /tmp/worth-building-export/export-manifest.json

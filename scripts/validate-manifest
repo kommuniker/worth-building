@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# Validate project.manifest.yaml structure.
+#
+# Uses portable `grep` so it works on stock macOS / Linux without needing
+# ripgrep installed.
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(dirname "$SCRIPT_DIR")"
+STATUS=0
+
+echo "=== Worth Building: Validate Manifest ==="
+echo ""
+
+MANIFEST="$ROOT/project.manifest.yaml"
+
+if [ ! -f "$MANIFEST" ]; then
+  echo "Error: project.manifest.yaml not found at $ROOT"
+  exit 1
+fi
+
+echo "Manifest found: $MANIFEST"
+echo "Checking required fields..."
+
+pass() {
+  echo "  OK: $1"
+}
+
+fail() {
+  echo "  FAIL: $1"
+  STATUS=1
+}
+
+require_key() {
+  local pattern="$1"
+  local label="$2"
+
+  if grep -qE "$pattern" "$MANIFEST"; then
+    pass "$label"
+  else
+    fail "$label missing"
+  fi
+}
+
+for key in \
+  '^name:' \
+  '^summary:' \
+  '^canonical_chat_entrypoint:' \
+  '^ai_tools:' \
+  '^purpose:' \
+  '^core_capabilities:' \
+  '^quality_gates:' \
+  '^workflow_scripts:' \
+  '^docs:' \
+  '^handoff:'; do
+  require_key "$key" "${key#^}"
+done
+
+echo "Checking focused docs outputs..."
+for key in assessments research runbooks meta; do
+  require_key "^  ${key}: " "docs.${key}"
+done
+
+echo "Checking handoff configuration..."
+for key in build_repo_template build_repo_docs_path; do
+  require_key "^  ${key}: " "handoff.${key}"
+done
+
+echo "Checking that stack-specific manifest fields are absent..."
+for key in '^stacks:' '^languages:' '^frameworks:' '^platforms:' '^datastores:'; do
+  if grep -qE "$key" "$MANIFEST"; then
+    fail "${key#^} should not appear in Worth Building"
+  else
+    pass "${key#^} omitted"
+  fi
+done
+
+echo "Checking workflow scripts exist..."
+for script in \
+    assess \
+    check-assessment \
+    compare-ideas \
+    research \
+    competitor-scan \
+    revenue-model \
+    risk-check \
+    generate-report \
+    export-bundle \
+    export-handoff \
+    validate-manifest; do
+  if [ -f "$ROOT/scripts/$script" ]; then
+    pass "scripts/$script"
+  else
+    fail "scripts/$script missing"
+  fi
+done
+
+echo "Checking required docs directories exist..."
+for path in docs/assessments docs/research docs/runbooks docs/meta; do
+  if [ -d "$ROOT/$path" ]; then
+    pass "$path"
+  else
+    fail "$path missing"
+  fi
+done
+
+echo ""
+if [ "$STATUS" -eq 0 ]; then
+  echo "Manifest validation complete."
+else
+  echo "Manifest validation failed."
+fi
+
+exit "$STATUS"

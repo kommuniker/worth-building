@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Compile findings into assessment report.
+# Delegates to core/prompts/roles/report-generator.md
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(dirname "$SCRIPT_DIR")"
+source "$SCRIPT_DIR/common.sh"
+
+echo "=== Worth Building: Report Generation ==="
+echo ""
+
+if [ -z "${1:-}" ]; then
+  echo "Usage: scripts/generate-report <idea-name>"
+  echo "  e.g.: scripts/generate-report ai-hvac-scheduler"
+  exit 1
+fi
+
+IDEA_INPUT="$*"
+IDEA_KEY="$(resolve_idea_key "$IDEA_INPUT")"
+ASSESSMENT_DIR="$ROOT/docs/assessments/$IDEA_KEY"
+TEMPLATE_DIR="$ROOT/core/templates/assessments"
+
+if [ ! -d "$ASSESSMENT_DIR" ]; then
+  echo "Error: No assessment found at $ASSESSMENT_DIR"
+  echo "Run 'scripts/assess \"$IDEA_INPUT\"' first."
+  exit 1
+fi
+
+echo "Compiling report from: $ASSESSMENT_DIR"
+echo ""
+echo "Bootstrapping report files..."
+for name in recommendations full-report executive-summary one-pager; do
+  bootstrap_file "$TEMPLATE_DIR/$name.md" "$ASSESSMENT_DIR/$name.md"
+done
+echo ""
+echo "An AI agent will follow the role prompt in:"
+echo "  core/prompts/roles/report-generator.md"
+echo ""
+echo "Start with: $ASSESSMENT_DIR/full-report.md"
+echo ""
+echo "If the final decision is Build now, create and export:"
+echo "  $ASSESSMENT_DIR/meta-template-handoff.md"
+echo "  scripts/export-handoff $IDEA_KEY"

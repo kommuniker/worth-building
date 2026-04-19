@@ -1,0 +1,33 @@
+# Worth Building Codex Configuration
+#
+# Shared workflow context lives in AGENTS.md, .codex/context-index.md,
+# docs/runbooks/run-an-assessment.md, and
+# .worth-building/project-context.json.
+#
+# Defensive defaults for public-repo use. Mirrors the posture of
+# .claude/settings.json: minimal blast radius, prompts before doing
+# anything that needs escalation. Users who want a more permissive
+# local workflow can override in their own global Codex config.
+
+# Pause and prompt before escalations (sandbox requests, permission
+# bumps, etc.). Proceeds automatically for actions inside the sandbox.
+# Docs deprecate `on-failure` in favor of `on-request` for interactive
+# use. Other valid values: "untrusted" (stricter), "granular" (per-rule),
+# "never" (no prompts — do not use for public default).
+approval_policy = "on-request"
+
+# Confine writes and network access to the project workspace. The
+# qualification workflow writes into docs/assessments/, docs/research/,
+# and exports/ inside the repo, which this mode allows. It blocks
+# writes outside the repo. Other valid values: "read-only" (stricter,
+# blocks all writes — too restrictive for running /qualify) and
+# "danger-full-access" (do not use for public default).
+sandbox_mode = "workspace-write"
+
+[shell_environment_policy]
+# Only inherit PATH and HOME from the user environment — prevents
+# leakage of API keys or other secrets that may be set in the user's
+# shell.
+inherit = "core"
+ignore_default_excludes = true
+include_only = ["PATH", "HOME"]

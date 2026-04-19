@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Compare multiple completed assessments and create a portfolio decision doc.
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(dirname "$SCRIPT_DIR")"
+
+if [ "$#" -lt 3 ]; then
+  echo "Usage: scripts/compare-ideas <comparison-name> <idea-a> <idea-b> [idea-c ...]"
+  echo "  e.g.: scripts/compare-ideas q2-priority ai-hvac-scheduler ai-broker-ops"
+  exit 1
+fi
+
+COMPARISON_NAME="$1"
+shift
+IDEAS=("$@")
+PORTFOLIO_DIR="$ROOT/docs/assessments/portfolio"
+OUTFILE="$PORTFOLIO_DIR/$COMPARISON_NAME.md"
+
+mkdir -p "$PORTFOLIO_DIR"
+
+if [ -f "$OUTFILE" ]; then
+  echo "Comparison already exists: $OUTFILE"
+  echo "Keeping existing file."
+  exit 0
+fi
+
+today="$(date +%F)"
+
+{
+  echo "# Idea Comparison: $COMPARISON_NAME"
+  echo
+  echo "**Date**: $today"
+  echo
+  echo "## Ideas Compared"
+  echo
+  for idea in "${IDEAS[@]}"; do
+    echo "- $idea"
+  done
+  echo
+  echo "## Scorecard"
+  echo
+  echo "| Idea | Defensibility (20) | Customer Urgency (20) | Distribution (15) | Right To Win (15) | Capital Efficiency (10) | Speed To Proof & Reversibility (10) | Strategic Fit & Opportunity Cost (10) | Total (100) |"
+  echo "|------|--------------------|----------------------|-------------------|--------------------|-------------------------|--------------------------------------|----------------------------------------|-------------|"
+  for idea in "${IDEAS[@]}"; do
+    echo "| $idea | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |"
+  done
+  echo
+  echo "## Ranking"
+  echo
+  for index in "${!IDEAS[@]}"; do
+    rank=$((index + 1))
+    echo "$rank. ${IDEAS[$index]}"
+  done
+  echo
+  echo "## Recommendation"
+  echo
+  echo "Choose one idea as the current priority. Explain why it won, why the"
+  echo "runner-up lost, what assumption should be validated next, and why this"
+  echo "is the best current use of time and capital."
+  echo
+  echo "## What Could Change The Ranking"
+  echo
+  echo "- State the one signal that would move the runner-up into first place."
+  echo "- State the one signal that would make you pause the winning idea."
+} > "$OUTFILE"
+
+echo "Portfolio comparison created: $OUTFILE"
+echo ""
+echo "Workflow prompt:"
+echo "  core/prompts/workflows/compare-ideas.md"
+echo ""
+echo "Use these existing assessments as input:"
+for idea in "${IDEAS[@]}"; do
+  echo "  docs/assessments/$idea/"
+done

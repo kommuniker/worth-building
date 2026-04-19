@@ -1,0 +1,44 @@
+{
+  "_comment": "Copy this file to .claude/settings.local.json to opt into convenience permissions for your local workflow. The .local.json file is gitignored, so your personal trust decisions stay off the public default. The committed .claude/settings.json intentionally ships with a minimal defensive allowlist for public users — add here whatever you personally trust.",
+
+  "permissions": {
+    "allow": [
+
+      "Bash(./scripts/assess:*)",
+      "Bash(scripts/assess:*)",
+      "Bash(./scripts/check-assessment:*)",
+      "Bash(scripts/check-assessment:*)",
+      "Bash(./scripts/compare-ideas:*)",
+      "Bash(scripts/compare-ideas:*)",
+      "Bash(./scripts/research:*)",
+      "Bash(scripts/research:*)",
+      "Bash(./scripts/competitor-scan:*)",
+      "Bash(scripts/competitor-scan:*)",
+      "Bash(./scripts/revenue-model:*)",
+      "Bash(scripts/revenue-model:*)",
+      "Bash(./scripts/risk-check:*)",
+      "Bash(scripts/risk-check:*)",
+      "Bash(./scripts/generate-report:*)",
+      "Bash(scripts/generate-report:*)",
+      "Bash(./scripts/export-bundle:*)",
+      "Bash(scripts/export-bundle:*)",
+      "Bash(./scripts/export-handoff:*)",
+      "Bash(scripts/export-handoff:*)",
+      "Bash(./scripts/validate-manifest)",
+      "Bash(scripts/validate-manifest)",
+
+      "Write(docs/assessments/**)",
+      "Write(docs/research/**)",
+      "Write(exports/**)",
+      "Write(.worth-building/team-profile.yaml)",
+
+      "Edit(docs/assessments/**)",
+      "Edit(docs/research/**)",
+      "Edit(.worth-building/team-profile.yaml)",
+
+      "Bash(mkdir -p docs/assessments/*)",
+      "Bash(mkdir -p docs/research/*)",
+      "Bash(mkdir -p exports/*)"
+    ]
+  }
+}

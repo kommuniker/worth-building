@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Bootstrap the market research files for an idea assessment.
+# Delegates to core/prompts/roles/market-researcher.md
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(dirname "$SCRIPT_DIR")"
+source "$SCRIPT_DIR/common.sh"
+
+echo "=== Worth Building: Market Research ==="
+echo ""
+
+if [ -z "${1:-}" ]; then
+  echo "Usage: scripts/research <idea-name>"
+  echo "  e.g.: scripts/research ai-scheduling-saas"
+  exit 1
+fi
+
+IDEA_INPUT="$*"
+IDEA_KEY="$(resolve_idea_key "$IDEA_INPUT")"
+ASSESSMENT_DIR="$ROOT/docs/assessments/$IDEA_KEY"
+RESEARCH_DIR="$ROOT/docs/research/$IDEA_KEY"
+TEMPLATE_DIR="$ROOT/core/templates/research"
+
+mkdir -p "$RESEARCH_DIR"
+if [ ! -d "$ASSESSMENT_DIR" ]; then
+  echo "Warning: No assessment workspace found at $ASSESSMENT_DIR"
+  echo "Run 'scripts/assess \"$IDEA_INPUT\"' first if this is a full qualification."
+  echo ""
+fi
+
+echo "Research directory created: $RESEARCH_DIR"
+echo ""
+echo "Bootstrapping market research files..."
+for name in market-overview trends segments sources; do
+  bootstrap_file "$TEMPLATE_DIR/$name.md" "$RESEARCH_DIR/$name.md"
+done
+echo ""
+echo "An AI agent will follow the role prompt in:"
+echo "  core/prompts/roles/market-researcher.md"
+echo ""
+echo "Start with: $RESEARCH_DIR/market-overview.md"

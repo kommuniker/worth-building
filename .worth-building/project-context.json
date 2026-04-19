@@ -1,0 +1,54 @@
+{
+  "project_name": "worth-building",
+  "project_summary": "AI-powered business idea qualification system.",
+  "canonical_chat_entrypoint": "qualify <idea>",
+  "team_profile": ".worth-building/team-profile.yaml",
+  "ai_tools": ["claude", "codex", "gemini"],
+  "core_capabilities": [
+    "idea-qualification",
+    "buyer-and-market-validation",
+    "competitive-advantage-analysis",
+    "distribution-feasibility",
+    "willingness-to-pay-analysis",
+    "revenue-quality-analysis",
+    "risk-and-disqualifier-analysis",
+    "portfolio-prioritization",
+    "decision-memo-generation"
+  ],
+  "quality_gates": [
+    "problem-buyer-and-alternatives-clearly-defined",
+    "why-now-defined",
+    "initial-beachhead-and-distribution-path-defined",
+    "moat-path-scored-with-justification",
+    "at-least-5-competitors-or-substitutes-analyzed",
+    "willingness-to-pay-and-revenue-quality-evaluated",
+    "regulatory-and-operational-complexity-assessed",
+    "critical-assumptions-documented",
+    "red-flags-and-green-flags-documented",
+    "build-validate-park-no-go-decision-with-reasoning",
+    "report-saved-to-docs-assessments"
+  ],
+  "workflow_scripts": [
+    "scripts/assess",
+    "scripts/check-assessment",
+    "scripts/compare-ideas",
+    "scripts/research",
+    "scripts/competitor-scan",
+    "scripts/revenue-model",
+    "scripts/risk-check",
+    "scripts/generate-report",
+    "scripts/export-bundle",
+    "scripts/export-handoff",
+    "scripts/validate-manifest"
+  ],
+  "docs": {
+    "assessments": "docs/assessments",
+    "research": "docs/research",
+    "runbooks": "docs/runbooks",
+    "meta": "docs/meta"
+  },
+  "handoff": {
+    "build_repo_template": "",
+    "build_repo_docs_path": "docs/business-point-of-departure"
+  }
+}

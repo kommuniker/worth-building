@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Identify and score risks.
+# Delegates to core/prompts/roles/risk-assessor.md
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(dirname "$SCRIPT_DIR")"
+source "$SCRIPT_DIR/common.sh"
+
+echo "=== Worth Building: Risk Assessment ==="
+echo ""
+
+if [ -z "${1:-}" ]; then
+  echo "Usage: scripts/risk-check <idea-name>"
+  echo "  e.g.: scripts/risk-check ai-hvac-scheduler"
+  exit 1
+fi
+
+IDEA_INPUT="$*"
+IDEA_KEY="$(resolve_idea_key "$IDEA_INPUT")"
+ASSESSMENT_DIR="$ROOT/docs/assessments/$IDEA_KEY"
+TEMPLATE_DIR="$ROOT/core/templates/assessments"
+
+if [ ! -d "$ASSESSMENT_DIR" ]; then
+  echo "Error: No assessment found at $ASSESSMENT_DIR"
+  echo "Run 'scripts/assess \"$IDEA_INPUT\"' first."
+  exit 1
+fi
+
+echo "Risk assessment directory: $ASSESSMENT_DIR"
+echo ""
+echo "Bootstrapping risk files..."
+for name in risk-assessment red-green-flags; do
+  bootstrap_file "$TEMPLATE_DIR/$name.md" "$ASSESSMENT_DIR/$name.md"
+done
+echo ""
+echo "An AI agent will follow the role prompt in:"
+echo "  core/prompts/roles/risk-assessor.md"
+echo ""
+echo "Start with: $ASSESSMENT_DIR/risk-assessment.md"

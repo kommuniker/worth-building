@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Create PR and merge to main.
+# Delegates to core/prompts/workflows/merge-to-main.md
+set -euo pipefail
+
+BRANCH=$(git branch --show-current)
+
+if [ "$BRANCH" = "main" ]; then
+  echo "Error: Already on main. Switch to a feature branch first."
+  exit 1
+fi
+
+echo "=== Worth Building: Merge $BRANCH to Main ==="
+echo ""
+echo "Current branch: $BRANCH"
+echo ""
+echo "An AI agent will follow the workflow in:"
+echo "  core/prompts/workflows/merge-to-main.md"
+echo ""
+echo "Steps:"
+echo "  1. Create backup branch from main"
+echo "  2. Push feature branch"
+echo "  3. Create PR"
+echo "  4. Verify checks"
+echo "  5. Merge"

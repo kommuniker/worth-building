@@ -1,0 +1,68 @@
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+*secret*
+*credential*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.local.json
+.claude/settings.local.json
+
+# Node (if/when stack is chosen)
+node_modules/
+dist/
+build/
+
+# Python (if/when stack is chosen)
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Temp files
+*.tmp
+*.log
+
+# Exported idea bundles — regeneratable from docs/assessments/ + docs/research/
+# If you want to commit a specific bundle (e.g. to share via this repo), use
+# `git add -f exports/{idea-key}/`.
+exports/
+
+# ------------------------------------------------------------------
+# Privacy by default
+# ------------------------------------------------------------------
+# Your team profile contains personal info (team composition, strengths,
+# skill gaps). It stays local. Copy team-profile.example.yaml to
+# team-profile.yaml and fill in your team.
+.worth-building/team-profile.yaml
+
+# Individual qualification work is private strategic output. By default,
+# assessments and research for specific ideas are NOT tracked. If you want
+# to commit and share a specific idea (e.g. a worked example), force-add it:
+#   git add -f docs/assessments/<idea>/
+# Prefer `scripts/export-bundle` for sharing with third parties.
+docs/assessments/*/
+docs/research/*/
+!docs/assessments/example-ai-physio-scribe/
+!docs/assessments/example-ai-physio-scribe/**
+!docs/research/example-ai-physio-scribe/
+!docs/research/example-ai-physio-scribe/**
+!docs/assessments/portfolio/
+!docs/research/vertical-scans/
+
+# Imported third-party research — keep local unless you have redistribution
+# rights. README files are tracked so the folder usage is documented.
+# Use dir/* (not dir/) so the README negation below can take effect.
+docs/incoming-knowledge/*
+!docs/incoming-knowledge/README.md
+docs/imported/*
+!docs/imported/README.md

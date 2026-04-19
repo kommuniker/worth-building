@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+# Export a Build-now assessment into a Meta-template handoff package.
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(dirname "$SCRIPT_DIR")"
+MANIFEST="$ROOT/project.manifest.yaml"
+source "$SCRIPT_DIR/common.sh"
+
+if [ -z "${1:-}" ]; then
+  echo "Usage: scripts/export-handoff <idea-name> [target-meta-template-repo]"
+  echo "  e.g.: scripts/export-handoff ai-dental-insurance-verification ../Meta-template"
+  exit 1
+fi
+
+IDEA_INPUT="$1"
+IDEA_KEY="$(resolve_idea_key "$IDEA_INPUT")"
+ASSESSMENT_DIR="$ROOT/docs/assessments/$IDEA_KEY"
+RESEARCH_DIR="$ROOT/docs/research/$IDEA_KEY"
+HANDOFF_TEMPLATE="$ROOT/core/templates/assessments/meta-template-handoff.md"
+HANDOFF_FILE="$ASSESSMENT_DIR/meta-template-handoff.md"
+RECOMMENDATIONS_FILE="$ASSESSMENT_DIR/recommendations.md"
+VIABILITY_FILE="$ASSESSMENT_DIR/viability-score.md"
+RISK_FILE="$ASSESSMENT_DIR/risk-assessment.md"
+
+BUILD_REPO_TEMPLATE="$(awk -F': ' '/^  build_repo_template: / { print $2 }' "$MANIFEST")"
+BUILD_REPO_DOCS_PATH="$(awk -F': ' '/^  build_repo_docs_path: / { print $2 }' "$MANIFEST")"
+
+if [ -z "${2:-}" ]; then
+  if [ -z "$BUILD_REPO_TEMPLATE" ]; then
+    echo "Error: no target repo path provided."
+    echo "Usage: scripts/export-handoff <idea-name> <target-meta-template-repo>"
+    exit 1
+  fi
+
+  case "$BUILD_REPO_TEMPLATE" in
+    /*) TARGET_REPO="$BUILD_REPO_TEMPLATE" ;;
+    *) TARGET_REPO="$ROOT/$BUILD_REPO_TEMPLATE" ;;
+  esac
+else
+  TARGET_REPO="$2"
+fi
+
+if [ ! -d "$ASSESSMENT_DIR" ]; then
+  echo "Error: Assessment directory not found: $ASSESSMENT_DIR"
+  exit 1
+fi
+
+if [ ! -d "$RESEARCH_DIR" ]; then
+  echo "Error: Research directory not found: $RESEARCH_DIR"
+  exit 1
+fi
+
+if [ ! -f "$RECOMMENDATIONS_FILE" ]; then
+  echo "Error: Missing recommendations file: $RECOMMENDATIONS_FILE"
+  exit 1
+fi
+
+DECISION="$(sed -n 's/^- \*\*Recommendation\*\*: //p; s/^\*\*Recommendation\*\*: //p' "$RECOMMENDATIONS_FILE" | head -n 1)"
+if [ "$DECISION" != "Build now" ]; then
+  echo "Refusing to export: $IDEA_KEY is '$DECISION', not 'Build now'."
+  exit 1
+fi
+
+if [ ! -f "$VIABILITY_FILE" ]; then
+  echo "Error: Missing viability score file: $VIABILITY_FILE"
+  exit 1
+fi
+
+if [ ! -f "$RISK_FILE" ]; then
+  echo "Error: Missing risk assessment file: $RISK_FILE"
+  exit 1
+fi
+
+QUALIFICATION_SCORE="$(sed -n 's/^- \*\*Qualification Score\*\*: \([0-9][0-9]*\)\/100$/\1/p; s/^\*\*Qualification Score\*\*: \([0-9][0-9]*\)\/100$/\1/p' "$VIABILITY_FILE" | head -n 1)"
+DEFENSIBILITY_SCORE="$(sed -n 's/^- \*\*Defensibility Score\*\*: \([0-9][0-9]*\)\/100$/\1/p; s/^\*\*Defensibility Score\*\*: \([0-9][0-9]*\)\/100$/\1/p' "$VIABILITY_FILE" | head -n 1)"
+
+if [ -z "$QUALIFICATION_SCORE" ] || [ "$QUALIFICATION_SCORE" -lt 70 ]; then
+  echo "Refusing to export: qualification score is below 70 or missing."
+  exit 1
+fi
+
+if [ -z "$DEFENSIBILITY_SCORE" ] || [ "$DEFENSIBILITY_SCORE" -lt 60 ]; then
+  echo "Refusing to export: defensibility score is below 60 or missing."
+  exit 1
+fi
+
+if grep -Eq '\| [^|]+ \| Blocker \|' "$VIABILITY_FILE"; then
+  echo "Refusing to export: viability score still contains blocker gates."
+  exit 1
+fi
+
+if grep -Eq '\| [^|]+ \| Blocker \|' "$RISK_FILE"; then
+  echo "Refusing to export: risk assessment still contains blocker gates."
+  exit 1
+fi
+
+if [ ! -f "$HANDOFF_FILE" ]; then
+  mkdir -p "$ASSESSMENT_DIR"
+  cp "$HANDOFF_TEMPLATE" "$HANDOFF_FILE"
+  echo "Created handoff template: $HANDOFF_FILE"
+  echo "Fill it in, then rerun scripts/export-handoff \"$IDEA_INPUT\"."
+  exit 1
+fi
+
+PLACEHOLDER_PATTERN='\[Fill in\]|YYYY-MM-DD|^- Product name:[[:space:]]*$|^- One-sentence thesis:[[:space:]]*$|^- Primary user:[[:space:]]*$|^- Economic buyer:[[:space:]]*$|^- Urgent problem:[[:space:]]*$|^- Current alternatives:[[:space:]]*$|^- Why this problem matters now:[[:space:]]*$|^- Why this customer should pay:[[:space:]]*$|^- Why this team can win now:[[:space:]]*$|^- Why this can become hard to copy:[[:space:]]*$|^- Why the capital path fits this idea:[[:space:]]*$|^- Why this is a good business if execution is strong:[[:space:]]*$|^- First wedge to build:[[:space:]]*$|^- Specific workflow being improved:[[:space:]]*$|^- Clear v1 outcome:[[:space:]]*$|^- What is explicitly out of scope:[[:space:]]*$|^- Initial distribution path:[[:space:]]*$|^- Expected sales motion:[[:space:]]*$|^- Pricing hypothesis:[[:space:]]*$|^- Fastest proof of demand:[[:space:]]*$|^- Trust, compliance, or regulatory constraints:[[:space:]]*$|^- Platform, channel, or customer dependency constraints:[[:space:]]*$|^- Operational constraints:[[:space:]]*$|^- Important risks:[[:space:]]*$|^- Assumption 1:[[:space:]]*$|^- Assumption 2:[[:space:]]*$|^- Assumption 3:[[:space:]]*$|^- Signal that would invalidate the idea:[[:space:]]*$|^- Signal that would force a narrower wedge:[[:space:]]*$|^- Signal that would support moving faster:[[:space:]]*$|^- First spec to create:[[:space:]]*$|^- Second spec candidate:[[:space:]]*$|^- Business questions that must stay visible during implementation:[[:space:]]*$'
+
+MATCHES="$(grep -En "$PLACEHOLDER_PATTERN" "$HANDOFF_FILE" || true)"
+if [ -n "$MATCHES" ]; then
+  echo "Refusing to export: handoff file still contains placeholders."
+  echo "$MATCHES"
+  exit 1
+fi
+
+if [ ! -d "$TARGET_REPO" ]; then
+  echo "Error: Target repo not found: $TARGET_REPO"
+  exit 1
+fi
+
+TARGET_HANDOFF_ROOT="$TARGET_REPO/$BUILD_REPO_DOCS_PATH"
+TARGET_PACKAGE_DIR="$TARGET_HANDOFF_ROOT/$IDEA_KEY"
+TARGET_BUSINESS_CONTEXT="$TARGET_HANDOFF_ROOT/business-context.md"
+TARGET_EXPORT_MANIFEST="$TARGET_PACKAGE_DIR/export-manifest.json"
+EXPORTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+if [ -d "$TARGET_PACKAGE_DIR" ] && find "$TARGET_PACKAGE_DIR" -mindepth 1 -maxdepth 1 | read -r _; then
+  echo "Refusing to overwrite existing export: $TARGET_PACKAGE_DIR"
+  exit 1
+fi
+
+mkdir -p "$TARGET_PACKAGE_DIR"
+
+cp "$HANDOFF_FILE" "$TARGET_BUSINESS_CONTEXT"
+cp "$HANDOFF_FILE" "$TARGET_PACKAGE_DIR/business-context.md"
+
+for file in \
+  idea-brief.md \
+  viability-score.md \
+  recommendations.md \
+  full-report.md \
+  executive-summary.md \
+  risk-assessment.md; do
+  cp "$ASSESSMENT_DIR/$file" "$TARGET_PACKAGE_DIR/$file"
+done
+
+for file in \
+  market-overview.md \
+  competitors.md \
+  revenue-model.md \
+  sources.md; do
+  cp "$RESEARCH_DIR/$file" "$TARGET_PACKAGE_DIR/$file"
+done
+
+cat > "$TARGET_EXPORT_MANIFEST" <<EOF
+{
+  "idea_name": "$IDEA_INPUT",
+  "idea_key": "$IDEA_KEY",
+  "decision": "$DECISION",
+  "exported_at": "$EXPORTED_AT",
+  "source_repo": "$ROOT",
+  "source_assessment_dir": "$ASSESSMENT_DIR",
+  "source_research_dir": "$RESEARCH_DIR",
+  "target_repo": "$TARGET_REPO",
+  "target_handoff_root": "$TARGET_HANDOFF_ROOT",
+  "target_package_dir": "$TARGET_PACKAGE_DIR",
+  "active_business_context": "$TARGET_BUSINESS_CONTEXT",
+  "exported_files": [
+    "business-context.md",
+    "export-manifest.json",
+    "idea-brief.md",
+    "viability-score.md",
+    "recommendations.md",
+    "full-report.md",
+    "executive-summary.md",
+    "risk-assessment.md",
+    "market-overview.md",
+    "competitors.md",
+    "revenue-model.md",
+    "sources.md"
+  ]
+}
+EOF
+
+echo "Exported handoff package:"
+echo "  $TARGET_PACKAGE_DIR"
+echo ""
+echo "Updated active business context:"
+echo "  $TARGET_BUSINESS_CONTEXT"
+echo ""
+echo "Generated export manifest:"
+echo "  $TARGET_EXPORT_MANIFEST"

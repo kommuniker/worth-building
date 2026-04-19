@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+# Export a qualified idea as a tool-agnostic bundle.
+#
+# Produces a self-contained folder of Markdown files that any AI agent or
+# human collaborator can consume without access to this repo. All four
+# verdicts (Build now / Validate first / Park / No-go) are exportable.
+#
+# Default output: exports/{idea-key}/
+# Override with:  scripts/export-bundle <idea-name> <target-path>
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(dirname "$SCRIPT_DIR")"
+source "$SCRIPT_DIR/common.sh"
+
+if [ -z "${1:-}" ]; then
+  echo "Usage: scripts/export-bundle <idea-name> [target-path]"
+  echo "  default target: exports/{idea-key}/"
+  echo ""
+  echo "Examples:"
+  echo "  scripts/export-bundle ai-dental-insurance-verification"
+  echo "  scripts/export-bundle 'AI Dental Insurance Verification' /tmp/share-bundle"
+  exit 1
+fi
+
+IDEA_INPUT="$1"
+IDEA_KEY="$(resolve_idea_key "$IDEA_INPUT")"
+ASSESSMENT_DIR="$ROOT/docs/assessments/$IDEA_KEY"
+RESEARCH_DIR="$ROOT/docs/research/$IDEA_KEY"
+DEFAULT_TARGET="$ROOT/exports/$IDEA_KEY"
+TARGET="${2:-$DEFAULT_TARGET}"
+
+TEMPLATE_DIR="$ROOT/core/templates/export-bundle"
+README_TEMPLATE="$TEMPLATE_DIR/README.md"
+PICKUP_TEMPLATE="$TEMPLATE_DIR/AI-PICKUP.md"
+
+if [ ! -d "$ASSESSMENT_DIR" ]; then
+  echo "Error: assessment directory not found: $ASSESSMENT_DIR"
+  echo "Run /qualify <idea> first, or check the idea name."
+  exit 1
+fi
+
+RECOMMENDATIONS_FILE="$ASSESSMENT_DIR/recommendations.md"
+if [ ! -f "$RECOMMENDATIONS_FILE" ]; then
+  echo "Error: missing $RECOMMENDATIONS_FILE"
+  echo "Run /qualify to completion before exporting."
+  exit 1
+fi
+
+DECISION="$(sed -n 's/^- \*\*Recommendation\*\*: //p; s/^\*\*Recommendation\*\*: //p' "$RECOMMENDATIONS_FILE" | head -n 1)"
+if [ -z "$DECISION" ]; then
+  echo "Error: no verdict found in $RECOMMENDATIONS_FILE"
+  echo "Expected a line matching '**Recommendation**: <verdict>'."
+  exit 1
+fi
+
+if [ "$DECISION" = "Build now / Validate first / Park / No-go" ]; then
+  echo "Error: $RECOMMENDATIONS_FILE still contains the template verdict line."
+  echo "Complete the assessment before exporting."
+  exit 1
+fi
+
+if [ ! -f "$README_TEMPLATE" ]; then
+  echo "Error: missing README template at $README_TEMPLATE"
+  exit 1
+fi
+
+if [ ! -f "$PICKUP_TEMPLATE" ]; then
+  echo "Error: missing AI-PICKUP template at $PICKUP_TEMPLATE"
+  exit 1
+fi
+
+if [ -d "$TARGET" ] && [ -n "$(ls -A "$TARGET" 2>/dev/null)" ]; then
+  echo "Refusing to overwrite non-empty target: $TARGET"
+  echo "Delete it first or pass a different target path."
+  exit 1
+fi
+
+mkdir -p "$TARGET"
+
+copy_if_exists() {
+  local src="$1"
+  local dst="$2"
+  if [ -f "$src" ]; then
+    cp "$src" "$dst"
+    echo "  copied: $(basename "$dst")"
+    return 0
+  else
+    echo "  skipped: $(basename "$dst") (no $(basename "$src") in source)"
+    return 1
+  fi
+}
+
+echo ""
+echo "Exporting bundle for: $IDEA_KEY"
+echo "Verdict: $DECISION"
+echo "Target: $TARGET"
+echo ""
+
+echo "Assessment files:"
+copy_if_exists "$ASSESSMENT_DIR/one-pager.md"         "$TARGET/idea.md" || true
+copy_if_exists "$ASSESSMENT_DIR/executive-summary.md" "$TARGET/decision.md" || true
+copy_if_exists "$ASSESSMENT_DIR/viability-score.md"   "$TARGET/scoring.md" || true
+copy_if_exists "$ASSESSMENT_DIR/recommendations.md"   "$TARGET/recommendations.md" || true
+copy_if_exists "$ASSESSMENT_DIR/red-green-flags.md"   "$TARGET/flags.md" || true
+copy_if_exists "$ASSESSMENT_DIR/risk-assessment.md"   "$TARGET/risks.md" || true
+copy_if_exists "$ASSESSMENT_DIR/full-report.md"       "$TARGET/full-report.md" || true
+copy_if_exists "$ASSESSMENT_DIR/rat-experiment.md"    "$TARGET/validation-plan.md" || true
+
+echo ""
+echo "Research files:"
+if [ -d "$RESEARCH_DIR" ]; then
+  copy_if_exists "$RESEARCH_DIR/market-overview.md" "$TARGET/market.md" || true
+  copy_if_exists "$RESEARCH_DIR/competitors.md"     "$TARGET/competition.md" || true
+  copy_if_exists "$RESEARCH_DIR/revenue-model.md"   "$TARGET/economics.md" || true
+  copy_if_exists "$RESEARCH_DIR/sources.md"         "$TARGET/sources.md" || true
+else
+  echo "  (no research directory at $RESEARCH_DIR — research files skipped)"
+fi
+
+EXPORT_DATE="$(date -u +%Y-%m-%d)"
+EXPORTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# README.md — template substitution with pipe delimiter so paths/names with
+# slashes don't break sed.
+sed \
+  -e "s|{{IDEA_KEY}}|${IDEA_KEY}|g" \
+  -e "s|{{IDEA_INPUT}}|${IDEA_INPUT}|g" \
+  -e "s|{{VERDICT}}|${DECISION}|g" \
+  -e "s|{{EXPORT_DATE}}|${EXPORT_DATE}|g" \
+  "$README_TEMPLATE" > "$TARGET/README.md"
+echo ""
+echo "Generated: README.md"
+
+# AI-PICKUP.md is static — copy as is.
+cp "$PICKUP_TEMPLATE" "$TARGET/AI-PICKUP.md"
+echo "Generated: AI-PICKUP.md"
+
+# export-manifest.json — machine-readable metadata.
+cat > "$TARGET/export-manifest.json" <<EOF
+{
+  "idea_name": "$IDEA_INPUT",
+  "idea_key": "$IDEA_KEY",
+  "verdict": "$DECISION",
+  "exported_at": "$EXPORTED_AT",
+  "bundle_format_version": "1.0",
+  "source_tool": "Worth Building"
+}
+EOF
+echo "Generated: export-manifest.json"
+
+echo ""
+echo "Bundle ready at: $TARGET"
+echo ""
+echo "Next:"
+echo "  - Review the bundle by opening $TARGET/README.md"
+echo "  - Share the folder (zip or copy) with implementers"
+echo "  - Instruct AI agents to start from $TARGET/AI-PICKUP.md"

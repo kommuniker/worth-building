@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Stage and commit to development branch.
+# Delegates to core/prompts/workflows/commit-dev.md
+set -euo pipefail
+
+BRANCH=$(git branch --show-current)
+
+if [ "$BRANCH" = "main" ]; then
+  echo "Error: Cannot commit directly to main."
+  echo "Create a feature branch first: git checkout -b <branch-name>"
+  exit 1
+fi
+
+echo "=== Worth Building: Commit to $BRANCH ==="
+echo ""
+echo "Current branch: $BRANCH"
+echo ""
+git status --short
+echo ""
+echo "An AI agent will follow the workflow in:"
+echo "  core/prompts/workflows/commit-dev.md"

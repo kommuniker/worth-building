@@ -1,0 +1,96 @@
+# Team Profile — EXAMPLE (SOLO DEVELOPER)
+#
+# This example reflects the most common starting point for this tool:
+# one technical founder, bootstrap-first. Copy this file to
+# team-profile.yaml and edit the personal fields (role, strengths,
+# skill gaps) to match your situation.
+#
+# If you're NOT a solo developer, you don't need to edit YAML by hand.
+# The `qualify` workflow will detect a missing team-profile.yaml on
+# first run and ask you a short series of Socratic questions to build
+# the profile, then write it for you.
+#
+# The real team-profile.yaml is gitignored so your personal profile
+# stays local. Do not commit it unless you specifically intend to share
+# your team composition publicly.
+#
+# Why this file matters: the qualification workflow reads it as a
+# filter on scoring. Distribution realism, right-to-win, validation
+# speed, and capital constraints are all scored for *your* team, not a
+# generic startup. An idea that requires enterprise field sales scores
+# lower for a solo developer than for a team with an enterprise
+# salesperson on board. Team fit is a first-class dimension.
+
+team:
+  size: 1
+
+  members:
+    - name: Founder
+      role: [e.g. "Full-stack developer" or "AI/ML engineer" or "product designer + frontend"]
+      strengths:
+        - [your strongest skill]
+        - [your second strongest skill]
+        - [your third strongest skill]
+
+  # What you can reliably ship without outside help.
+  can_build:
+    - Full-stack web applications
+    - AI-powered products using foundation models and APIs
+    - Browser extensions and web tools
+    - Self-serve SaaS with good UX
+    - Simple data pipelines and backend systems
+
+  # Things that require bringing in help (contractor, hire, advisor).
+  # Flag ideas that depend on these as risks.
+  cannot_build_without_help:
+    - Native mobile apps (iOS/Android)
+    - Hardware or IoT products
+    - Products requiring dedicated DevOps/SRE
+    - Products requiring deep industry certification (medical devices,
+      financial auditing, aviation)
+
+  # Go-to-market motions a solo developer can realistically execute.
+  distribution_strengths:
+    - Product-led growth (self-serve, freemium, free trial)
+    - Content marketing and SEO (technical content the founder can write)
+    - Developer and technical communities
+    - Community-driven adoption (Reddit, HN, niche Slack/Discord)
+    - Founder-led sales to small/mid-market buyers
+    - X/LinkedIn thought leadership as distribution
+
+  # Channels a solo developer cannot realistically execute right now.
+  distribution_weaknesses:
+    - Enterprise field sales (no sales team, no enterprise relationships)
+    - Outbound sales at scale (no SDR capacity)
+    - Channel partnerships requiring a business-development motion
+    - Paid acquisition requiring significant sustained ad budget
+    - Large-account customer-success operations
+
+  # Hard constraints that rule out categories of ideas.
+  business_constraints:
+    - Bootstrap-first — no external funding assumed
+    - Time is the scarcest resource
+    - Validation must be fast (under 3 months to learn something real)
+    - Ideas must be buildable by one person in a reasonable timeframe
+    - Prefer recurring revenue over project-based work
+    - Cannot navigate complex regulatory environments without outside help
+
+  # Domain or skill areas the solo dev lacks. Not fatal, but named gaps
+  # must have a credible plan to close.
+  skill_gaps:
+    - [e.g. "Enterprise sales and procurement navigation"]
+    - [e.g. "Regulatory compliance expertise in your target vertical"]
+    - [e.g. "Native mobile development"]
+    - [e.g. "Business development and partnership management"]
+
+  # What an ideal idea looks like for a solo developer. The qualifier
+  # uses this as a positive-signal filter — it does not override weak
+  # scores, but it flags which ideas play to your strengths.
+  ideal_idea_profile:
+    - AI/ML or technical depth as a core differentiator, not a wrapper
+    - Self-serve or product-led distribution — buyers find and adopt
+    - Rabbit customer type ($1K-$10K ARPA) — matches inbound/PLG motion
+    - Hair on Fire problem archetype — urgent pain, buyers already looking
+    - Technical moat one person can build (data flywheel, vertical depth)
+    - Can reach first paying customer in under 3 months
+    - Domain where your specific technical + domain combo is the edge

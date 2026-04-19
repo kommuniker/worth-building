@@ -1,0 +1,62 @@
+name: worth-building
+summary: AI-powered business idea qualification system.
+canonical_chat_entrypoint: "qualify <idea>"
+
+ai_tools:
+  - claude
+  - codex
+  - gemini
+
+purpose: >
+  Qualify business ideas against buyer urgency, initial beachhead strength,
+  real market demand, competition, distribution realism, willingness to pay,
+  and moat potential. Produce hard build / validate / park / no-go decisions
+  and export decisions through a generic handoff bundle, with optional
+  Meta-template handoff for teams that use that convention.
+
+core_capabilities:
+  - idea-qualification
+  - buyer-and-market-validation
+  - competitive-advantage-analysis
+  - distribution-feasibility
+  - willingness-to-pay-analysis
+  - revenue-quality-analysis
+  - risk-and-disqualifier-analysis
+  - portfolio-prioritization
+  - decision-memo-generation
+
+quality_gates:
+  - problem-buyer-and-alternatives-clearly-defined
+  - why-now-defined
+  - initial-beachhead-and-distribution-path-defined
+  - moat-path-scored-with-justification
+  - at-least-5-competitors-or-substitutes-analyzed
+  - willingness-to-pay-and-revenue-quality-evaluated
+  - regulatory-and-operational-complexity-assessed
+  - critical-assumptions-documented
+  - red-flags-and-green-flags-documented
+  - build-validate-park-no-go-decision-with-reasoning
+  - report-saved-to-docs-assessments
+
+workflow_scripts:
+  - scripts/assess
+  - scripts/compare-ideas
+  - scripts/check-assessment
+  - scripts/research
+  - scripts/competitor-scan
+  - scripts/revenue-model
+  - scripts/risk-check
+  - scripts/generate-report
+  - scripts/export-bundle
+  - scripts/export-handoff
+  - scripts/validate-manifest
+
+docs:
+  assessments: docs/assessments
+  research: docs/research
+  runbooks: docs/runbooks
+  meta: docs/meta
+
+handoff:
+  build_repo_template: ""
+  build_repo_docs_path: docs/business-point-of-departure

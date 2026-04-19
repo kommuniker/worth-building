@@ -1,0 +1,13 @@
+{
+  "context": {
+    "fileName": [
+      "AGENTS.md",
+      "GEMINI.md",
+      "project.manifest.yaml",
+      ".gemini/context-index.md",
+      "docs/runbooks/run-an-assessment.md",
+      "core/prompts/workflows/qualify-idea.md",
+      ".worth-building/project-context.json"
+    ]
+  }
+}
