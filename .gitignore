@@ -32,6 +32,9 @@ venv/
 *.tmp
 *.log
 
+# Playwright MCP session cache
+.playwright-mcp/
+
 # Exported idea bundles — regeneratable from docs/assessments/ + docs/research/
 # If you want to commit a specific bundle (e.g. to share via this repo), use
 # `git add -f exports/{idea-key}/`.
