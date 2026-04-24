@@ -14,9 +14,9 @@
   <meta property="og:site_name" content="Worth Building" />
   <meta property="og:title" content="Worth Building — Qualify ideas before you commit the quarter" />
   <meta property="og:description" content="Qualify business ideas before you commit three months. Build / Validate / Park / No-go with reasoning — inside your AI coding agent." />
-  <meta property="og:url" content="https://kommuniker.github.io/worth-building/" />
-  <meta property="og:image" content="https://kommuniker.github.io/worth-building/og-image.png" />
-  <meta property="og:image:secure_url" content="https://kommuniker.github.io/worth-building/og-image.png" />
+  <meta property="og:url" content="https://worthbuilding.dev/" />
+  <meta property="og:image" content="https://worthbuilding.dev/og-image.png" />
+  <meta property="og:image:secure_url" content="https://worthbuilding.dev/og-image.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -26,7 +26,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Worth Building — Qualify ideas before you commit the quarter" />
   <meta name="twitter:description" content="Socratic pressure-test your next idea inside your AI coding agent. Build / Validate / Park / No-go with explicit reasoning." />
-  <meta name="twitter:image" content="https://kommuniker.github.io/worth-building/og-image.png" />
+  <meta name="twitter:image" content="https://worthbuilding.dev/og-image.png" />
   <meta name="twitter:image:alt" content="Worth Building landing card with four verdicts: Build now, Validate first, Park, No-go." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -160,12 +160,12 @@
       color: var(--muted); border: 1px solid var(--border); border-radius: 999px;
     }
     .nav-links { display: flex; align-items: center; gap: 6px; }
-    .nav-links a {
+    .nav-links a:not(.nav-cta) {
       color: var(--fg-2); padding: 8px 12px; border-radius: 8px;
       font-size: 14px; font-weight: 500;
       transition: color 150ms ease, background 150ms ease;
     }
-    .nav-links a:hover { color: var(--fg); background: rgba(255, 255, 255, 0.04); }
+    .nav-links a:not(.nav-cta):hover { color: var(--fg); background: rgba(255, 255, 255, 0.04); }
     .nav-cta {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 8px 14px; border-radius: 10px;
@@ -674,7 +674,7 @@
           <span>claude-code · worth-building</span>
         </div>
         <div class="terminal-body">
-          <div><span class="prompt">❯</span> <span class="cmd">qualify</span> <span class="arg">ai scribe for physical therapy clinics</span><span class="caret" aria-hidden="true"></span></div>
+          <div><span class="prompt">❯</span> <span class="cmd">qualify</span> <span class="arg" id="wb-arg" aria-hidden="true">ai scribe for physical therapy clinics</span><span class="caret" aria-hidden="true"></span></div>
           <div class="agent">↳ Socratic intake · research · 10 qualification + 7 defensibility dims</div>
           <div>Verdict: <span class="verdict">Validate first</span> — qualification 62/100, defensibility 54/100.</div>
           <div class="agent">↳ Designed $500 / 2-week landing-page test. First action this week: 3 named clinic owners by Fri.</div>
@@ -945,6 +945,82 @@
     else reveals.forEach((el) => el.classList.add('visible'));
     // Safety net: after 1800ms, reveal anything that didn't intersect
     setTimeout(() => reveals.forEach((el) => el.classList.add('visible')), 1800);
+
+    // Hero terminal: cycle through example ideas -------------------------------
+    (() => {
+      const arg = document.getElementById('wb-arg');
+      if (!arg) return;
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduced) return;
+
+      const IDEAS = [
+        'ai scribe for physical therapy clinics',
+        'wedding planner for second marriages',
+        'stock predictor for retail investors',
+        'ai dungeon master for solo tabletop rpg',
+        'pricing optimizer for boutique hotels',
+        'invoice chaser for freelance illustrators',
+        'lunch ordering for small construction sites',
+        'compliance copilot for dental labs',
+        'contract redlining for real estate brokers',
+        'mood tracker for new parents',
+        'inventory forecaster for coffee roasters',
+        'legal review for indie saas founders',
+        'expense reports for nonprofit boards',
+        'delivery router for artisan bakeries',
+        'churn predictor for niche newsletters',
+        'ai tutor for competitive chess children',
+        'tax filer for crypto day traders',
+        'onboarding automation for remote bootcamps',
+        'grant writer for climate nonprofits',
+        'claims assistant for boutique insurers',
+        'meeting notes for hospital department heads',
+        'scheduling tool for pediatric dentists',
+        'payroll for touring indie musicians',
+        'maintenance scheduler for fleet managers',
+        'lead qualifier for regional law firms',
+        'citation checker for phd thesis writers',
+        'customer support for subscription box brands',
+        'workout planner for busy shift workers',
+        'hiring pipeline for early-stage biotech',
+        'recipe planner for weeknight solo cooks'
+      ];
+
+      // Fisher-Yates shuffle so each visitor gets a different order
+      const queue = IDEAS.slice();
+      for (let i = queue.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [queue[i], queue[j]] = [queue[j], queue[i]];
+      }
+      // Keep the initial static value first in the visible experience —
+      // drop it from the queue so we don't repeat it straight away.
+      const first = arg.textContent.trim();
+      const queued = queue.filter((s) => s !== first);
+
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+      (async () => {
+        await wait(2400); // initial hold on the static first example
+        let idx = 0;
+        while (true) {
+          if (document.hidden) { await wait(500); continue; }
+          // erase
+          while (arg.textContent.length > 0) {
+            arg.textContent = arg.textContent.slice(0, -1);
+            await wait(22);
+          }
+          await wait(260);
+          // type next
+          const next = queued[idx % queued.length];
+          for (const ch of next) {
+            arg.textContent += ch;
+            await wait(38 + Math.random() * 28);
+          }
+          await wait(2100);
+          idx++;
+        }
+      })();
+    })();
   </script>
 </body>
 </html>
