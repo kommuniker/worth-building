@@ -43,9 +43,82 @@ Start this workflow when the user says something like:
 - Keep unknowns explicit in `idea-brief.md`.
 - Research only when it changes the decision.
 
+## Response Format (User-Facing Output)
+
+Every reply in this workflow opens with a status header so the user
+always knows where they are and how much is left. Use Markdown and
+Unicode glyphs only — never ANSI escape codes (they do not render in
+the Claude Code chat).
+
+### Stage map (canonical, 6 stages)
+
+| #   | Stage    | Emoji | Counted units                                |
+| --- | -------- | ----- | -------------------------------------------- |
+| 1   | Setup    | 🎯    | 4 team-profile questions                     |
+| 2   | Premise  | 🔍    | single checkpoint                            |
+| 3   | Intake   | 📋    | 9 fixed questions                            |
+| 4   | Research | 🔬    | 4 areas: competitive, market, revenue, risk  |
+| 5   | Verdict  | ⚖️    | single output                                |
+| 6   | Export   | 🚀    | single output                                |
+
+### Per-turn header
+
+On every question turn, open with one line of this exact shape:
+
+```
+**{emoji} {Stage Name}** {bar} {done} / {total} · {pct}%
+```
+
+- `{bar}` uses `▰` for done and `▱` for remaining. Bar length equals
+  `{total}` (so the intake bar is 9 chars wide, research is 4, setup
+  is 4).
+- `{pct}` is `done / total` rounded to the nearest integer.
+- For single-step stages (Premise, Verdict, Export) skip the bar and
+  show a status line instead, e.g. `**🔍 Premise Check** · deconstructing the idea`.
+
+After the header, leave one blank line and then the question, with
+the question title in **bold**:
+
+```
+**📋 Intake Wizard** ▰▰▰▱▱▱▱▱▱ 3 / 9 · 33%
+
+**Q3 — Current alternatives & workarounds**
+
+What is the user doing today to solve this problem? Spreadsheet?
+Manual process? An incumbent tool they hate? Nothing at all?
+```
+
+### Stage banner
+
+Print the stage banner **once**, on the turn that crosses into a new
+stage. Subsequent turns within that stage use only the per-turn header.
+
+```
+╔══════════════════════════════════════════════╗
+║  📋  STAGE 3 OF 6 · INTAKE WIZARD            ║
+╚══════════════════════════════════════════════╝
+```
+
+Pad the banner so the right edge lines up; pick the same outer width
+for every stage banner in a session for visual consistency.
+
+### Style rules
+
+- Use the emoji set above; do not invent new per-stage emoji.
+- Bold for question titles; headers/banners only at stage transitions.
+- Always recompute the bar from the canonical totals — do not let the
+  bar drift if the user revisits an earlier question.
+- If the user is on a font that mangles `▰ ▱ ╔ ═ ╗ ║ ╚ ╝`, fall back to
+  ASCII (`#`, `-`, `+`, `|`) and keep the structure identical.
+
 ## Flow
 
 ### Stage 1: Start Quietly
+
+> Print the **Stage 1 of 6 · Setup** banner on entry. Each team-profile
+> question shows `**🎯 Setup** ▰…▱… N / 4 · …%`. If the team profile
+> already exists and is current, skip to Stage 1.5 and start that
+> banner instead.
 
 1. Read `.worth-building/team-profile.yaml`. The team profile
    shapes all subsequent scoring — distribution realism, right-to-win,
@@ -96,6 +169,10 @@ Start this workflow when the user says something like:
 
 ### Stage 1.5: Deconstruct The Premise
 
+> Print the **Stage 2 of 6 · Premise Check** banner on entry. Single
+> checkpoint, so use the status line `**🔍 Premise Check** · deconstructing the idea`
+> rather than a progress bar.
+
 Before intake, run the 4-layer deconstruction funnel from
 `core/prompts/workflows/deconstruct-premise.md`:
 
@@ -112,6 +189,10 @@ For briefs that are already precise, well-reasoned, and evidenced, note that
 the premise survived deconstruction in one line and proceed to Stage 2.
 
 ### Stage 2: Intake Wizard
+
+> Print the **Stage 3 of 6 · Intake Wizard** banner on entry. Each
+> question opens with `**📋 Intake Wizard** ▰…▱… N / 9 · …%` so the
+> user always sees how many questions remain.
 
 Gather the core inputs one question at a time:
 
@@ -155,6 +236,11 @@ struggles with any of them, that is the information.
 
 ### Stage 3: Decision-Critical Research
 
+> Print the **Stage 4 of 6 · Research** banner on entry. Track the
+> four research areas (competitive, market, revenue, risk) with
+> `**🔬 Research** ▰…▱… N / 4 · …%`, advancing the counter as each
+> area reaches "decision-sufficient" evidence.
+
 Only after intake is strong enough:
 
 - fill the minimum market files needed to judge timing and market size
@@ -166,6 +252,10 @@ Only after intake is strong enough:
 Write into the standard assessment and research files as evidence develops.
 
 ### Stage 4: Decision
+
+> Print the **Stage 5 of 6 · Verdict** banner on entry. Use the status
+> line `**⚖️ Verdict** · drafting decision memo` while writing the
+> output files.
 
 Write:
 
@@ -196,6 +286,10 @@ produces a chairman synthesis. Its value is in borderline or high-stakes
 decisions; skip it for clear Build now or clear No-go verdicts.
 
 ### Stage 5: Export The Decision
+
+> Print the **Stage 6 of 6 · Export** banner on entry. Use the status
+> line `**🚀 Export** · packaging the decision bundle` while running
+> the export.
 
 Once the verdict is reached, offer the user the generic tool-agnostic
 bundle as the default export path. It works for every verdict and produces
