@@ -45,53 +45,77 @@ Start this workflow when the user says something like:
 
 ## Response Format (User-Facing Output)
 
-Every reply in this workflow opens with a status header so the user
-always knows where they are and how much is left. Use Markdown and
-Unicode glyphs only — never ANSI escape codes (they do not render in
-the Claude Code chat).
+Every reply in this workflow opens with a three-line status header so
+the user always knows (a) where they are in the whole flow, (b) which
+stage/topic they're in, (c) how far through that stage they are.
+Use Markdown and Unicode glyphs only — never ANSI escape codes (they
+do not render in the Claude Code chat).
 
-### Stage map (canonical, 6 stages)
+### Stage map (canonical, 6 stages, 20 sub-steps total)
 
-| #   | Stage    | Emoji | Counted units                                |
-| --- | -------- | ----- | -------------------------------------------- |
-| 1   | Setup    | 🎯    | 4 team-profile questions                     |
-| 2   | Premise  | 🔍    | single checkpoint                            |
-| 3   | Intake   | 📋    | 9 fixed questions                            |
-| 4   | Research | 🔬    | 4 areas: competitive, market, revenue, risk  |
-| 5   | Verdict  | ⚖️    | single output                                |
-| 6   | Export   | 🚀    | single output                                |
+| # | Stage    | Emoji | Sub-steps | Sub-step indices in the 20-step flow |
+|---|----------|-------|-----------|--------------------------------------|
+| 1 | Setup    | 🎯    | 4         | 1-4   |
+| 2 | Premise  | 🔍    | 1         | 5     |
+| 3 | Intake   | 📋    | 9         | 6-14  |
+| 4 | Research | 🔬    | 4         | 15-18 |
+| 5 | Verdict  | ⚖️    | 1         | 19    |
+| 6 | Export   | 🚀    | 1         | 20    |
 
-### Per-turn header
+**Total = 20 sub-steps.** This is the canonical denominator for the
+"Flow" line. If a stage needs more sub-questions than the canonical
+count (e.g. multi-question Premise Check, batch-mode Intake), keep
+the denominator at 20 and let the per-stage bar exceed its nominal
+length — never invent extra "global" steps.
 
-On every question turn, open with one line of this exact shape:
+### Three-line per-turn header
 
-```
-**{emoji} {Stage Name}** {bar} {done} / {total} · {pct}%
-```
-
-- `{bar}` uses `▰` for done and `▱` for remaining. Bar length equals
-  `{total}` (so the intake bar is 9 chars wide, research is 4, setup
-  is 4).
-- `{pct}` is `done / total` rounded to the nearest integer.
-- For single-step stages (Premise, Verdict, Export) skip the bar and
-  show a status line instead, e.g. `**🔍 Premise Check** · deconstructing the idea`.
-
-After the header, leave one blank line and then the question, with
-the question title in **bold**:
+On every question turn, open with these three lines, exactly:
 
 ```
-**📋 Intake Wizard** ▰▰▰▱▱▱▱▱▱ 3 / 9 · 33%
+**Flow**   {flow-bar} {flow-done} / 20 · {flow-pct}%
+**Topic**  {emoji} {Stage Name}
+**Step**   {step-bar} {step-done} / {step-total}  —  {step-title}
+```
 
-**Q3 — Current alternatives & workarounds**
+- `{flow-bar}` is 20 chars: filled `▰` for completed sub-steps, `▱`
+  for remaining.
+- `{flow-done}` = number of sub-steps completed across the whole
+  flow (use the canonical indices in the stage-map table).
+- `{step-bar}` is `{step-total}` chars wide (so 9 chars during
+  intake, 4 chars during setup or research).
+- `{step-title}` is the short name of the current question/area
+  (e.g. *Current alternatives & workarounds*, *competitive
+  research*, *team-profile bootstrap*).
+- `{flow-pct}` is rounded to the nearest integer.
+- For single-step stages (Premise, Verdict, Export), the **Step**
+  line drops the bar and shows only a short status phrase:
+  `**Step**   · deconstructing the idea`.
 
-What is the user doing today to solve this problem? Spreadsheet?
-Manual process? An incumbent tool they hate? Nothing at all?
+Example — asking intake question 3 of 9:
+
+```
+**Flow**   ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱  7 / 20 · 35%
+**Topic**  📋 Intake Wizard
+**Step**   ▰▰▰▱▱▱▱▱▱  3 / 9  —  Current alternatives & workarounds
+```
+
+After the header, leave one blank line, then the question with the
+question title in **bold**.
+
+Example — single-step verdict stage:
+
+```
+**Flow**   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱  14 / 20 · 70%
+**Topic**  ⚖️ Verdict
+**Step**   · drafting decision memo
 ```
 
 ### Stage banner
 
 Print the stage banner **once**, on the turn that crosses into a new
-stage. Subsequent turns within that stage use only the per-turn header.
+stage. Subsequent turns within that stage use only the three-line
+per-turn header.
 
 ```
 ╔══════════════════════════════════════════════╗
@@ -105,20 +129,47 @@ for every stage banner in a session for visual consistency.
 ### Style rules
 
 - Use the emoji set above; do not invent new per-stage emoji.
-- Bold for question titles; headers/banners only at stage transitions.
-- Always recompute the bar from the canonical totals — do not let the
-  bar drift if the user revisits an earlier question.
-- If the user is on a font that mangles `▰ ▱ ╔ ═ ╗ ║ ╚ ╝`, fall back to
-  ASCII (`#`, `-`, `+`, `|`) and keep the structure identical.
+- Bold for question titles; headers/banners only at stage
+  transitions.
+- Always recompute both bars from the canonical totals — do not let
+  them drift if the user revisits an earlier question.
+- Pad/align the three header lines so the bars and counters appear
+  in the same column on each line for visual consistency.
+- If the user is on a font that mangles `▰ ▱ ╔ ═ ╗ ║ ╚ ╝`, fall back
+  to ASCII (`#`, `-`, `+`, `|`) and keep the structure identical.
+
+### Table-formatting rules (avoid render failures)
+
+The Claude Code chat falls back to "Column 1: …, Column 2: …"
+linearisation when a Markdown table is too wide or malformed. To
+keep tables rendering correctly:
+
+- **Cap tables at 4 columns** when cell content is multi-word. For
+  richer comparisons, use a bulleted list with sub-bullets, or
+  multiple smaller tables.
+- **Keep cell content to one line and one phrase.** Long sentences
+  belong in prose below the table, not inside cells.
+- **Never put a raw `|` character inside a cell.** Replace with
+  `/`, `·`, or the HTML entity `&#124;`.
+- **Always leave a blank line before and after the table.**
+- **Header row and alignment row must have identical column counts.**
+  No trailing pipes, no missing alignment cells.
+- **Avoid backticks-with-pipes inside cells** (e.g. \`a | b\`) —
+  some renderers misparse the inner pipe.
+
+Default to bullets for comparisons with > 4 attributes or with
+rich cell content. Reserve tables for compact, scannable data
+(name + 2-3 short fields).
 
 ## Flow
 
 ### Stage 1: Start Quietly
 
 > Print the **Stage 1 of 6 · Setup** banner on entry. Each team-profile
-> question shows `**🎯 Setup** ▰…▱… N / 4 · …%`. If the team profile
-> already exists and is current, skip to Stage 1.5 and start that
-> banner instead.
+> question opens with the three-line header (Flow / Topic 🎯 Setup /
+> Step `▰…▱…` N of 4). Sub-step indices in the global flow are 1-4.
+> If the team profile already exists and is current, skip to
+> Stage 1.5 and start that banner instead.
 
 1. Read `.worth-building/team-profile.yaml`. The team profile
    shapes all subsequent scoring — distribution realism, right-to-win,
@@ -170,8 +221,10 @@ for every stage banner in a session for visual consistency.
 ### Stage 1.5: Deconstruct The Premise
 
 > Print the **Stage 2 of 6 · Premise Check** banner on entry. Single
-> checkpoint, so use the status line `**🔍 Premise Check** · deconstructing the idea`
-> rather than a progress bar.
+> sub-step (index 5 in the 20-step flow). Three-line header with
+> Topic `🔍 Premise Check` and Step `· deconstructing the idea`
+> (no per-step bar). If multiple premise sub-questions are needed,
+> keep Step on the status line and let the Flow line stay at 5/20.
 
 Before intake, run the 4-layer deconstruction funnel from
 `core/prompts/workflows/deconstruct-premise.md`:
@@ -191,8 +244,9 @@ the premise survived deconstruction in one line and proceed to Stage 2.
 ### Stage 2: Intake Wizard
 
 > Print the **Stage 3 of 6 · Intake Wizard** banner on entry. Each
-> question opens with `**📋 Intake Wizard** ▰…▱… N / 9 · …%` so the
-> user always sees how many questions remain.
+> question opens with the three-line header (Flow / Topic
+> `📋 Intake Wizard` / Step `▰…▱…` N of 9 — *<question title>*).
+> Sub-step indices in the global flow are 6-14.
 
 Gather the core inputs one question at a time:
 
@@ -237,9 +291,11 @@ struggles with any of them, that is the information.
 ### Stage 3: Decision-Critical Research
 
 > Print the **Stage 4 of 6 · Research** banner on entry. Track the
-> four research areas (competitive, market, revenue, risk) with
-> `**🔬 Research** ▰…▱… N / 4 · …%`, advancing the counter as each
-> area reaches "decision-sufficient" evidence.
+> four research areas (competitive, market, revenue, risk) via the
+> three-line header (Flow / Topic `🔬 Research` / Step `▰…▱…` N of 4
+> — *<area name>*). Sub-step indices in the global flow are 15-18.
+> Advance the Step counter as each area reaches "decision-sufficient"
+> evidence.
 
 Only after intake is strong enough:
 
@@ -253,9 +309,9 @@ Write into the standard assessment and research files as evidence develops.
 
 ### Stage 4: Decision
 
-> Print the **Stage 5 of 6 · Verdict** banner on entry. Use the status
-> line `**⚖️ Verdict** · drafting decision memo` while writing the
-> output files.
+> Print the **Stage 5 of 6 · Verdict** banner on entry. Single
+> sub-step (index 19). Three-line header with Topic `⚖️ Verdict` and
+> Step `· drafting decision memo` (no per-step bar).
 
 Write:
 
@@ -287,9 +343,10 @@ decisions; skip it for clear Build now or clear No-go verdicts.
 
 ### Stage 5: Export The Decision
 
-> Print the **Stage 6 of 6 · Export** banner on entry. Use the status
-> line `**🚀 Export** · packaging the decision bundle` while running
-> the export.
+> Print the **Stage 6 of 6 · Export** banner on entry. Single
+> sub-step (index 20 — the final one, so Flow shows `20 / 20 · 100%`
+> at the moment the bundle is produced). Three-line header with
+> Topic `🚀 Export` and Step `· packaging the decision bundle`.
 
 Once the verdict is reached, offer the user the generic tool-agnostic
 bundle as the default export path. It works for every verdict and produces
