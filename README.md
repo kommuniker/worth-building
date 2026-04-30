@@ -123,6 +123,33 @@ qualify <your idea>
 
 The agent walks you through the rest.
 
+## First run — what to expect
+
+Three things new users typically wonder, answered up-front:
+
+**Where does `team-profile.yaml` come from?** It is a local,
+gitignored file describing *your team*. The repo ships
+`.worth-building/team-profile.example.yaml` (pre-filled with sensible
+solo-developer defaults). The first time you run `/qualify`, the
+wizard either reads an existing `team-profile.yaml` or — if it
+doesn't exist — bootstraps one for you by asking 4 short questions
+and writing the file directly. **You do not edit YAML manually.**
+
+**`/qualify` versus `scripts/assess` — which do I run?** Always
+`/qualify`. It is the conversational entry point in your AI agent
+(Claude Code, Cursor, Codex, Gemini). `scripts/assess` is a backend
+bootstrap helper that the agent invokes internally; you do not need
+to run it as a first step. (If you explicitly prefer terminal-first
+bootstrapping, see `docs/runbooks/run-an-assessment.md` → "Terminal
+Fallback".)
+
+**What if I just type `/qualify` with no idea?** The wizard will
+politely ask you for one. It is not an error.
+
+If something goes sideways — `check-assessment` flags placeholders, a
+prompt feels off, you want to abandon a run — see
+[`docs/runbooks/troubleshooting.md`](docs/runbooks/troubleshooting.md).
+
 ## 30-second demo
 
 ```text
@@ -443,6 +470,14 @@ Found a sharper framework? Got a verdict that aged badly? Open a
 GitHub issue, reach the author via the
 [personal site](https://kristian-stoffregen.dk/), or connect on
 [LinkedIn](https://www.linkedin.com/in/kristian-stoffregen/).
+
+## Releases
+
+Version history and release notes live in
+[`CHANGELOG.md`](CHANGELOG.md). The current version is in
+[`VERSION`](VERSION). Maintainers cut releases with
+`scripts/release` (see `docs/runbooks/troubleshooting.md` for the
+flow).
 
 ## License
 
