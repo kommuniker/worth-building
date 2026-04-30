@@ -7,7 +7,8 @@
       "Bash(./scripts/validate-manifest)",
       "Bash(scripts/validate-manifest)",
       "Bash(./scripts/check-assessment:*)",
-      "Bash(scripts/check-assessment:*)"
+      "Bash(scripts/check-assessment:*)",
+      "Bash(gh:*)"
     ],
     "ask": [
       "Bash(git push:*)",
@@ -26,7 +27,6 @@
       "Write(**/*.key)",
       "Write(**/*secret*)",
       "Write(**/*credential*)",
-      "Bash(gh:*)",
       "Bash(git push origin main*)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
