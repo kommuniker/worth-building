@@ -8,7 +8,10 @@ When this command is invoked:
 3. follow `core/prompts/workflows/qualify-idea.md`
 4. ask exactly one question at a time by default and update the assessment
    files as the user answers
-5. continue until the idea reaches a clear decision or the user pauses
+5. open every reply with the status header defined in the **Response
+   Format** section of `core/prompts/workflows/qualify-idea.md` (stage
+   banner on entry, progress bar + counter on each question)
+6. continue until the idea reaches a clear decision or the user pauses
 
 Follow:
 

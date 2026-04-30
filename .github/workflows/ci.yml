@@ -30,3 +30,44 @@ jobs:
           test -f /tmp/worth-building-export/README.md
           test -f /tmp/worth-building-export/AI-PICKUP.md
           test -f /tmp/worth-building-export/export-manifest.json
+
+  validate-prompts:
+    name: Validate qualify prompt structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify qualify-idea.md has all required structural sections
+        run: |
+          set -euo pipefail
+          PROMPT="core/prompts/workflows/qualify-idea.md"
+          REQUIRED=(
+            "## Response Format"
+            "## Flow"
+            "### Stage 1: Start Quietly"
+            "### Stage 1.5: Deconstruct The Premise"
+            "### Stage 2: Intake Wizard"
+            "### Stage 3: Decision-Critical Research"
+            "### Stage 4: Decision"
+            "### Stage 5: Export The Decision"
+          )
+          missing=0
+          for section in "${REQUIRED[@]}"; do
+            if grep -Fq -- "$section" "$PROMPT"; then
+              echo "PASS: $section"
+            else
+              echo "FAIL: missing section '$section' in $PROMPT"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            echo ""
+            echo "ERROR: $missing required section(s) missing from $PROMPT"
+            echo "A prompt edit removed structure that /qualify depends on."
+            echo "Either restore the section(s) or update this CI check intentionally."
+            exit 1
+          fi
+          echo ""
+          echo "All required structural sections present."
