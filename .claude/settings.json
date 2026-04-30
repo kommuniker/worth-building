@@ -9,6 +9,10 @@
       "Bash(./scripts/check-assessment:*)",
       "Bash(scripts/check-assessment:*)"
     ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git checkout:*)"
+    ],
     "deny": [
       "Read(.env*)",
       "Read(**/secrets/**)",
@@ -23,12 +27,10 @@
       "Write(**/*secret*)",
       "Write(**/*credential*)",
       "Bash(gh:*)",
-      "Bash(git push:*)",
       "Bash(git push origin main*)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
       "Bash(git reset:*)",
-      "Bash(git checkout:*)",
       "Bash(rm:*)",
       "Bash(sudo:*)",
       "Bash(chmod:*)",
