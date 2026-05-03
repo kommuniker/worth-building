@@ -9,6 +9,15 @@ this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Plain-language disclaimer in `README.md` (new `## Disclaimer`
+  section) and a muted disclaimer paragraph in the landing-page
+  footer (`index.html`), clarifying that verdicts and scores are
+  framework opinions based on user inputs — not professional,
+  financial, legal, or investment advice — and reinforcing the MIT
+  "as is, no warranty" stance for non-lawyer readers.
+
 ## [0.1.0] — 2026-04-29
 
 First public release. Worth Building is now usable end-to-end as a

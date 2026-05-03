@@ -479,6 +479,22 @@ Version history and release notes live in
 `scripts/release` (see `docs/runbooks/troubleshooting.md` for the
 flow).
 
+## Disclaimer
+
+Worth Building produces **informational analysis, not professional,
+financial, legal, or investment advice**. Verdicts (`Build now`,
+`Validate first`, `Park`, `No-go`), scores, risk registers, and
+recommendations reflect a framework's opinion based on the inputs you
+provide — they are not predictions or guarantees of outcomes.
+
+You are solely responsible for any business, financial, or strategic
+decisions you make. Use at your own risk. Where a decision could
+materially affect your livelihood, contracts, regulated activity, or
+third parties, consult a qualified human professional.
+
+The software is provided "as is", without warranty of any kind, under
+the MIT license — see [`LICENSE`](LICENSE).
+
 ## License
 
 MIT — use freely, modify for your team, contribute improvements back.
