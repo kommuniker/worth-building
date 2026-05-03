@@ -9,6 +9,8 @@ this project adheres to
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-05-03
+
 ### Added
 
 - Plain-language disclaimer in `README.md` (new `## Disclaimer`
@@ -77,5 +79,6 @@ example, multi-tool adapters, and CI smoke tests.
 - **Versioning baseline** — `VERSION` file, this `CHANGELOG.md`,
   and `scripts/release` for routine future tags.
 
-[Unreleased]: https://github.com/kommuniker/worth-building/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/kommuniker/worth-building/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/kommuniker/worth-building/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/kommuniker/worth-building/releases/tag/v0.1.0
